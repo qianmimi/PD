@@ -57,7 +57,7 @@ parser start {
 parser parse_ethernet {
     extract(ethernet);
     return select(latest.etherType) {
-        ETHERTYPE_DROP_NF: parse_drop_no; // notification packet，This should report event???
+        ETHERTYPE_DROP_NF: parse_drop_nf; // notification packet，This should report event???
         ETHERTYPE_IPV4 : parse_ipv4; 
         default : ingress;
     }
