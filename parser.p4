@@ -10,7 +10,8 @@
     fields {
         startPId : 32;
         endPId : 32;
-        PortHashVal: 16;///???not sure
+        downPortHashVal: 16;///???not sure
+        upPortHashVal: 16;///???not sure
         dflag : 1;
     }
 }
