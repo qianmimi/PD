@@ -31,7 +31,30 @@ control ingress {
 }
 
 control egress {  
-	  
+	if (valid(sfNotice)) {
+        apply(teProcessSfHeader);
+    }  
+}
+//sfInfoKey.dflag==1 removeHeader
+//else do nothing
+table teProcessSfHeader {
+    reads {
+        //eg_intr_md.egress_port : exact;
+	sfInfoKey.dflag : exact;
+    }
+    actions { aeDoNothing; aeRemoveSfHeader;}
+    default_action : aeRemoveSfHeader();
+}
+
+action aeDoNothing() {
+    modify_field(ipv4_option.packetID,sfInfoKey.endPId+1);
+    no_op();
+}
+
+action aeRemoveSfHeader() {
+    modify_field(ethernet.etherType, sfNotice.realEtherType);
+    remove_header(sfNotice);
+    modify_field(ipv4_option.packetID,sfInfoKey.endPId+1);
 }
 
 @pragma stage 0
@@ -87,10 +110,12 @@ action ainotice() {
    modify_field(sfNotice.startPId, sfInfoKey.startPId);
    modify_field(sfNotice.endPId, sfInfoKey.endPId);
    modify_field(ethernet.etherType, ETHERTYPE_DROP_NF);
-   
-
+   aiMcToup();
 }
 
+action aiMcToup() {
+    modify_field(ig_intr_md_for_tm.mcast_grp_a, ig_intr_md.ingress_port);  //从入口发送通知包
+}
 action aiforward(egress_spec) {
     modify_field(ig_intr_md_for_tm.ucast_egress_port, egress_spec);
 }
