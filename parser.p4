@@ -3,14 +3,23 @@
  * Headers, metadata, and parser.
  *
  */
- 
- header sfInfoKey_t sfInfoKey;
- 
+ metadata sfInfoKey_t sfInfoKey;
+ header sfNotice_t sfNotice;
+  
  header_type sfInfoKey_t {
     fields {
         startPId : 32;
         endPId : 32;
         PortHashVal: 16;///???not sure
+        dflag : 1;
+    }
+}
+
+header_type sfNotice_t {
+    fields {
+        startPId : 32;
+        endPId : 32;
+        realEtherType : 16;
     }
 }
 
