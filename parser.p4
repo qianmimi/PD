@@ -3,11 +3,20 @@
  * Headers, metadata, and parser.
  *
  */
+ 
+ header sfInfoKey_t sfInfoKey;
+ 
+ header_type sfInfoKey_t {
+    fields {
+        startPId : 32;
+        endPId : 32;
+        PortHashVal: 16;///???not sure
+    }
+}
 
 /*===========================================
 =            Forwarding Headers.            =
 ===========================================*/
-
 header_type ethernet_t {
     fields {
         dstAddr : 48;
@@ -81,6 +90,7 @@ parser parse_l4 {
     extract(l4_ports);
     return ingress;
 }
+
 
 // looks up its ring buffer for the packets whose sequence
 //numbers fall into the missing interval and reports them as dropped
