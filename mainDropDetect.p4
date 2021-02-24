@@ -82,6 +82,13 @@ table tiNotice {
 }
 action ainotice() {
    //TODO: constructs a packet
+   add_header(sfNotice);
+   modify_field(sfNotice.realEtherType, ethernet.etherType);
+   modify_field(sfNotice.startPId, sfInfoKey.startPId);
+   modify_field(sfNotice.endPId, sfInfoKey.endPId);
+   modify_field(ethernet.etherType, ETHERTYPE_DROP_NF);
+   
+
 }
 
 action aiforward(egress_spec) {
