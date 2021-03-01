@@ -10,7 +10,7 @@
 
 #define ETHERTYPE_IPV4 0x0800
 #define ETHERTYPE_DROP_NF 0x081A
-#define SF_SHORT_BIT_WIDTH 15
+#define SF_SHORT_BIT_WIDTH 32
 #include "parser.p4"
 
 field_list downPortFields {
@@ -48,7 +48,19 @@ control egress {
     }
     
     
+    
+    
 }
+table teProcessBuffer { 
+    actions { aeBufferflow;}
+    default_action : aeBufferflow();
+}
+action aeBufferflow() {
+      modify_field_with_hash_based_offset(sfInfoKey.upPortHashVal, 0, upPortHashCalc, SF_SHORT_BIT_WIDTH);
+      rPortBuff.execute_stateful_alu_from_hash(sfInfoKey.upPortHashVal);
+}
+
+
 //sfInfoKey.dflag==1 removeHeader,然后发送
 //else do nothing,发送
 table teProcessSfHeader { 
@@ -61,7 +73,6 @@ table teProcessSfHeader {
 }
 
 action aeDoNothing() {
-    modify_field(ipv4_option.packetID,sfInfoKey.endPId+1);
     no_op();
 }
 
@@ -106,6 +117,35 @@ blackbox stateful_alu sUpdatePacketId{
 register rPacketId {
     width : 32;
     instance_count : SF_SHORT_SIZE;
+}
+
+register rPortBuff {
+    width : 8;
+    instance_count : SF_SHORT_BIT_WIDTH;
+}
+register rPort1packetId {
+    width : 32;
+    instance_count : SF_SHORT_BIT_WIDTH;
+}
+register rPort1SrcAddr {
+    width : 32;
+    instance_count : SF_SHORT_BIT_WIDTH;
+}
+register rPort1DstAddr {
+    width : 32;
+    instance_count : SF_SHORT_BIT_WIDTH;
+}
+register rPort1SrcPort {
+    width :32;
+    instance_count : SF_SHORT_BIT_WIDTH;
+}
+register rPort1DstPort {
+    width :32;
+    instance_count : SF_SHORT_BIT_WIDTH;
+}
+register rPort1Protocol {
+    width :32;
+    instance_count : SF_SHORT_BIT_WIDTH;
 }
 
 //if sfInfoKey.dflag==1,constructs a packet
