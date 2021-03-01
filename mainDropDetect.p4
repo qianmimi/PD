@@ -46,18 +46,28 @@ control egress {
 	
 	//TODO  2 根据port，记录packetId和flow信息
     }
-    
-    
-    
+    apply(teBufferPos);//save pkt number and flow
     
 }
-table teProcessBuffer { 
-    actions { aeBufferflow;}
-    default_action : aeBufferflow();
+table teBufferPos { 
+    actions { aeBufferFlow;}
+    default_action : aeBufferFlow();
 }
-action aeBufferflow() {
+action aeBufferFlow() {
+
+      // increase packet number in one port == pos
       modify_field_with_hash_based_offset(sfInfoKey.upPortHashVal, 0, upPortHashCalc, SF_SHORT_BIT_WIDTH);
-      rPortBuff.execute_stateful_alu_from_hash(sfInfoKey.upPortHashVal);
+      rPortBuffPosUpdate.execute_stateful_alu(sfInfoKey.upPortHashVal);
+      
+      //save pkt number and flow(5-tuple)
+      rPortBuffPktId.execute_stateful_alu(sfInfoKey.upPortPos);
+      rPortBuffSrcAddr.execute_stateful_alu(sfInfoKey.upPortPos);
+      rPortBuffDstAddr.execute_stateful_alu(sfInfoKey.upPortPos);
+      rPortBuffSrcPort.execute_stateful_alu(sfInfoKey.upPortPos);
+      rPortBuffDstPort.execute_stateful_alu(sfInfoKey.upPortPos);
+      rPortBuffProtocol.execute_stateful_alu(sfInfoKey.upPortPos);
+
+      
 }
 
 
@@ -94,6 +104,7 @@ action aiUpdatePacketId() {
     modify_field(sfInfoKey.endPId, ipv4_option.packetID);
     modify_field_with_hash_based_offset(sfInfoKey.downPortHashVal, 0, downPortHashCalc, 65536);
     sUpdatePacketId.execute_stateful_alu(sfInfoKey.downPortHashVal);
+    
 }
 
 //if packetId==register+1,no drop
@@ -119,34 +130,78 @@ register rPacketId {
     instance_count : SF_SHORT_SIZE;
 }
 
-register rPortBuff {
+
+//ring buffer pos == pkt numbers
+blackbox stateful_alu rPortBuffPosUpdate{
+    reg : rUpPortBuffPos;
+    update_lo_1_value : register_lo+1;
+    output_dst : sfInfoKey.upPortPos;
+    output_value : register_lo;
+}
+register rUpPortBuffPos {
     width : 8;
     instance_count : SF_SHORT_BIT_WIDTH;
 }
-register rPort1packetId {
+//save pkt number
+blackbox stateful_alu rPortBuffPktId{
+    reg : rUpPortpacketId;
+    update_lo_1_value : sfInfoKey.upPortPos
+}
+register rUpPortpacketId {
     width : 32;
     instance_count : SF_SHORT_BIT_WIDTH;
 }
-register rPort1SrcAddr {
+//save pkt srcAddr
+blackbox stateful_alu rPortBuffSrcAddr{
+    reg : rUpPortSrcAddr;
+    update_lo_1_value : ipv4.srcAddr;
+}
+register rUpPortSrcAddr {
     width : 32;
     instance_count : SF_SHORT_BIT_WIDTH;
 }
-register rPort1DstAddr {
+
+//save pkt DstAddr
+blackbox stateful_alu rPortBuffDstAddr{
+    reg : rUpPortDstAddr;
+    update_lo_1_value : ipv4.dstAddr;
+}
+register rUpPortDstAddr {
     width : 32;
     instance_count : SF_SHORT_BIT_WIDTH;
 }
-register rPort1SrcPort {
+
+//save pkt src port
+blackbox stateful_alu rPortBuffSrcPort{
+    reg : rUpPortSrcPort;
+    update_lo_1_value : tcp.srcPort;
+}
+register rUpPortSrcPort {
     width :32;
     instance_count : SF_SHORT_BIT_WIDTH;
 }
-register rPort1DstPort {
+
+//save pkt dst port
+blackbox stateful_alu rPortBuffDstPort{
+    reg : rUpPortDstPort;
+    update_lo_1_value : tcp.dstPort;
+}
+register rUpPortDstPort {
     width :32;
     instance_count : SF_SHORT_BIT_WIDTH;
 }
-register rPort1Protocol {
+
+//save pkt protocol
+blackbox stateful_alu rPortBuffProtocol{
+    reg : rUpPortProtocol;
+    update_lo_1_value : ipv4.protocol;
+}
+register rUpPortProtocol {
     width :32;
     instance_count : SF_SHORT_BIT_WIDTH;
 }
+
+
 
 //if sfInfoKey.dflag==1,constructs a packet
 @pragma stage 0
