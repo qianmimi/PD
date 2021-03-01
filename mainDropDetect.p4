@@ -120,8 +120,8 @@ blackbox stateful_alu sDownPortPktId{
     update_lo_1_predicate : condition_lo;
     update_lo_1_value : register_lo+1;
 
-    output_dst : sfInfoKey.startPId;//能不能这样用?两个output_dst和output_value
-    output_value : register_lo;//保存开始seqnumber
+    output_dst : sfInfoKey.startPId;
+    output_value : register_lo;
 }
 
 register rDownPortPktId {
