@@ -12,6 +12,7 @@
         endPId : 32;
         downPortHashVal: 16;///???not sure
         upPortHashVal: 16;///???not sure
+        upPortPos : 32;
         dflag : 1;
     }
 }
