@@ -31,12 +31,15 @@ field_list_calculation upPortHashCalc {
     output_width : SF_SHORT_BIT_WIDTH;
 }
 control ingress {
-    apply(tiVerifyfarward);//verify whether packet drop,TO DO：need to modify
+    apply(tiDectectDrop);//verify whether packet drop,TO DO：need to modify
     //TO DO
     /*1, forward packet always,
       2, if sfInfoKey.dflag==1 constructs a packet which contains the starting and ending of missing sequence numbers and sends it to upstreamswitch
     produce three copies of it in order to avoid drop again */
-    apply(tiNotice);
+    if(sfInfoKey.dflag==1){
+        apply(tiNotice);//
+    }
+
 }
 
 control egress {
@@ -44,12 +47,11 @@ control egress {
 	if (valid(sfNotice)) {
         apply(teProcessSfHeader);//还有问题？？？对于通知包，应该怎么发送给原端口，并且删除通知包的包头后，发送给本来应该发送的端口,后面再看看
 	
-	//TODO  2 根据port，记录packetId和flow信息
     }
-    apply(teBufferPos);//save pkt number and flow
+    apply(teBufferFlow);//save pkt number and flow
     
 }
-table teBufferPos { 
+table teBufferFlow { 
     actions { aeBufferFlow;}
     default_action : aeBufferFlow();
 }
@@ -69,7 +71,6 @@ action aeBufferFlow() {
 
       
 }
-
 
 //sfInfoKey.dflag==1 removeHeader,然后发送
 //else do nothing,发送
@@ -93,43 +94,40 @@ action aeRemoveSfHeader() {
 }
 
 @pragma stage 0
-table tiVerifyfarward{
+table tiDectectDrop{
     reads {ethernet.etherType : exact;}//verify normal packet or notice packet
-    actions {aiUpdatePacketId; aiNoOp;}
+    actions {aiDownPortPktId; aiNoOp;}
     default_action : aiNoOp();
     size : 128;
 }
 //if normal packet
-action aiUpdatePacketId() {  
+action aiDownPortPktId() {  
     modify_field(sfInfoKey.endPId, ipv4_option.packetID);
-    modify_field_with_hash_based_offset(sfInfoKey.downPortHashVal, 0, downPortHashCalc, 65536);
-    sUpdatePacketId.execute_stateful_alu(sfInfoKey.downPortHashVal);
-    
+    modify_field_with_hash_based_offset(sfInfoKey.downPortHashVal, 0, downPortHashCalc, SF_SHORT_BIT_WIDTH);
+    sDownPortPktId.execute_stateful_alu(sfInfoKey.downPortHashVal);
+    if(sfInfoKey.endPId==sfInfoKey.startPId+1){
+    	modify_field(sfInfoKey.dflag,1);
+    }   
 }
 
 //if packetId==register+1,no drop
 /* else inconsecutive sequence numbers as a sign of packet drops;*/
 /*dflag==0 no drop ; dflag==1 drop*/
-blackbox stateful_alu sUpdatePacketId{
-    reg : rPacketId;
+blackbox stateful_alu sDownPortPktId{
+    reg : rDownPortPktId;
     condition_lo : ipv4_option.packetID== register_lo+1;
 
     update_lo_1_predicate : condition_lo;
     update_lo_1_value : register_lo+1;
 
-    output_predicate : not condition_lo;
-    output_dst : sfInfoKey.dflag;
-    output_value : 1;
-    
     output_dst : sfInfoKey.startPId;//能不能这样用?两个output_dst和output_value
     output_value : register_lo;//保存开始seqnumber
 }
 
-register rPacketId {
+register rDownPortPktId {
     width : 32;
     instance_count : SF_SHORT_SIZE;
 }
-
 
 //ring buffer pos == pkt numbers
 blackbox stateful_alu rPortBuffPosUpdate{
