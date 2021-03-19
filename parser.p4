@@ -1,79 +1,14 @@
 /**
  *
- * Headers, metadata, and parser.
+ * parser.p4
  *
  */
- metadata sfInfoKey_t sfInfoKey;
- header sfNotice_t sfNotice;
-  
- header_type sfInfoKey_t {
-    fields {
-        startPId : 32;
-        endPId : 32;
-        downPortHashVal: 16;///???not sure
-        upPortHashVal: 16;///???not sure
-        upPortPos : 32;
-        dflag : 1;
-    }
-}
-
-header_type sfNotice_t {
-    fields {
-        startPId : 32;
-        endPId : 32;
-        realEtherType : 16;
-    }
-}
-
-/*===========================================
-=            Forwarding Headers.            =
-===========================================*/
-header_type ethernet_t {
-    fields {
-        dstAddr : 48;
-        srcAddr : 48;
-        etherType : 16;
-    }
-}
-header ethernet_t ethernet;
-
-header_type ipv4_t {
-    fields {
-        version : 4;
-        ihl : 4;
-        diffserv : 8;
-        totalLen : 16;
-        identification : 16;
-        flags : 3;
-        fragOffset : 13;
-        ttl : 8;
-        protocol : 8;
-        hdrChecksum : 16; // here
-        srcAddr : 32;
-        dstAddr: 32;
-    }
-}
-header ipv4_t ipv4;
-
-header ipv4_option_t {
-    packetID : 16;   // a private sequence number
-}
-header ipv4_option_t ipv4_option;
-
-header_type l4_ports_t {
-    fields {
-        ports : 32;
-    }
-}
-header l4_ports_t l4_ports;
-
-
-/*=====  End of Forwarding Headers.  ======*/
-
+ 
+#define ETHER_TYPE_IPV4 0x0800
+#define ETHERTYPE_DROP_NF 0x0801
 parser start {
     return parse_ethernet;
 }
-
 parser parse_ethernet {
     extract(ethernet);
     return select(latest.etherType) {
