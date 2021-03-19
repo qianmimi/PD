@@ -3,7 +3,6 @@
  * parser.p4
  *
  */
- 
 #define ETHER_TYPE_IPV4 0x0800
 #define ETHERTYPE_DROP_NF 0x0801
 parser start {
@@ -17,7 +16,6 @@ parser parse_ethernet {
         default : ingress;
     }
 }
-
 // IP.
 parser parse_ipv4 {
     extract(ipv4);
@@ -36,7 +34,6 @@ parser parse_l4 {
     extract(l4_ports);
     return ingress;
 }
-
 
 // looks up its ring buffer for the packets whose sequence
 //numbers fall into the missing interval and reports them as dropped
