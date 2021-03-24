@@ -110,12 +110,12 @@ action aiDownPortPktId() {
     }   
 }
 
-//if packetId==register+1,no drop
-/* else inconsecutive sequence numbers as a sign of packet drops;*/
-/*dflag==0 no drop ; dflag==1 drop*/
+// packetId==register,dflag=0,no drop,
+ // packetId!=register,dflag=1,has drops;
+
 blackbox stateful_alu sDownPortPktId{
     reg : rDownPortPktId;
-    condition_lo : ipv4_option.packetID== register_lo+1;
+    condition_lo : ipv4_option.packetID== register_lo;
 
     update_lo_1_predicate : condition_lo;
     update_lo_1_value : register_lo+1;
